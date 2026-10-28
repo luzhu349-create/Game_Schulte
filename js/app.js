@@ -819,10 +819,19 @@ function canvasBlob(canvas) {
   });
 }
 
+function isPrivateHost(hostname) {
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname.endsWith(".local")) return true;
+  const parts = hostname.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+  if (parts[0] === 10 || parts[0] === 127) return true;
+  if (parts[0] === 192 && parts[1] === 168) return true;
+  return parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31;
+}
+
 function challengeUrl(result) {
-  const local = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-  const origin = local && state.shareOrigin ? state.shareOrigin.replace(/\/$/, "") : location.origin;
-  const url = new URL(location.pathname, `${origin}/`);
+  const configured = state.shareOrigin.replace(/\/$/, "");
+  const base = isPrivateHost(location.hostname) && configured ? `${configured}/` : location.href;
+  const url = new URL(base);
   url.search = "";
   url.hash = Schulte.buildChallengeHash({
     level: result.level || state.level,
