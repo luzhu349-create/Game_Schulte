@@ -1,0 +1,19 @@
+{
+  "name": "舒尔特方格",
+  "short_name": "舒尔特",
+  "description": "按顺序找出数字，训练专注力，并把同一张方格发给朋友。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e8e1d4",
+  "theme_color": "#e8e1d4",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

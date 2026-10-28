@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e8e1d4">
+  <meta name="description" content="舒尔特方格专注力训练。按顺序找出数字，并把同一张方格发给朋友挑战。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta property="og:title" content="舒尔特方格">
+  <meta property="og:description" content="按顺序找出数字，来挑战我的成绩。">
+  <meta property="og:type" content="website">
+  <title>舒尔特方格</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/favicon.svg">
+  <link rel="manifest" href="manifest.json">
+  <script>
+    try {
+      var raw = localStorage.getItem("schulte.v1");
+      var theme = raw ? JSON.parse(raw).theme : "auto";
+      var dark = theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+      document.querySelector('meta[name="theme-color"]').content = dark ? "#12110f" : "#e8e1d4";
+    } catch (error) {}
+  </script>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="app">
+    <main id="view-home" class="screen home">
+      <header>
+        <div class="mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+          <span></span><span class="on"></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+        <div class="top-row">
+          <h1 class="brand serif">舒尔特方格</h1>
+          <button class="text-btn" type="button" data-action="settings">设置</button>
+        </div>
+        <p class="tip">目光尽量停在方格中心，按从小到大的顺序点出数字。</p>
+      </header>
+
+      <aside id="home-banner" class="banner" hidden>
+        <div class="banner-top">
+          <p class="eyebrow">朋友的挑战</p>
+          <button class="text-btn" type="button" data-action="dismiss-challenge">忽略</button>
+        </div>
+        <p id="banner-text"></p>
+        <button class="btn primary" type="button" data-action="accept">接受挑战</button>
+      </aside>
+
+      <section class="block">
+        <p class="eyebrow" id="mode-label">模式</p>
+        <div class="segment two" role="group" aria-labelledby="mode-label">
+          <button type="button" data-action="mode" data-mode-value="count">计时</button>
+          <button type="button" data-action="mode" data-mode-value="limit">限时</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <p class="eyebrow" id="level-label">等级</p>
+        <div class="segment" role="group" aria-labelledby="level-label">
+          <button type="button" data-action="level" data-level-value="basic">初级</button>
+          <button type="button" data-action="level" data-level-value="mid">中级</button>
+          <button type="button" data-action="level" data-level-value="high">高级</button>
+        </div>
+        <p id="size-caption" class="caption"></p>
+      </section>
+
+      <section class="stats" aria-label="练习情况">
+        <div>
+          <span class="label">今日</span>
+          <strong id="stat-today" class="num">0 局</strong>
+        </div>
+        <div>
+          <span class="label">连续</span>
+          <strong id="stat-streak" class="num">0 天</strong>
+        </div>
+        <div>
+          <span class="label">最佳</span>
+          <strong id="stat-best" class="num">暂无</strong>
+        </div>
+      </section>
+
+      <div class="home-start">
+        <button id="start-btn" class="btn primary" type="button" data-action="start">开始训练</button>
+      </div>
+    </main>
+
+    <section id="view-play" class="screen" hidden>
+      <header class="play-top">
+        <button class="icon-btn leave" type="button" data-action="leave" aria-label="离开">×</button>
+        <p id="play-center" class="play-center">准备</p>
+        <p id="play-timer" class="timer num" hidden>0.0</p>
+        <p id="play-miss" class="miss num" aria-live="polite"></p>
+      </header>
+      <p id="play-prompt" class="prompt" hidden>
+        <span id="prompt-label">下一个</span><span id="play-next" class="next num"></span>
+      </p>
+      <div id="bar" class="bar" hidden><span id="bar-fill"></span></div>
+      <div class="stage">
+        <div id="play-ready" class="ready">
+          <p id="ready-kicker" class="eyebrow"></p>
+          <h2 id="ready-title" class="num"></h2>
+          <p id="ready-desc"></p>
+          <p id="ready-best" class="best"></p>
+          <button class="btn primary" type="button" data-action="begin">开始</button>
+        </div>
+        <div id="board" class="board" role="group" aria-label="舒尔特方格" hidden></div>
+      </div>
+      <p id="play-count" class="count num" hidden></p>
+    </section>
+
+    <section id="view-result" class="screen" hidden>
+      <div class="result">
+        <p id="result-kicker" class="eyebrow"></p>
+        <div id="result-time-row" class="result-time">
+          <span id="result-time" class="num"></span>
+          <span id="result-unit" class="unit">秒</span>
+        </div>
+        <p id="result-grade" class="grade serif"></p>
+        <p id="result-detail" class="detail"></p>
+        <p id="result-compare" class="compare" hidden></p>
+        <div class="result-actions">
+          <button class="btn primary" type="button" data-action="again">再来一局</button>
+          <button class="btn ghost" type="button" data-action="share">发给朋友</button>
+          <button class="btn text" type="button" data-action="retry">重试这张方格</button>
+          <button id="result-back" class="btn text" type="button" data-action="result-back">回到首页</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-records" class="screen subpage" hidden>
+      <h1 class="serif">记录</h1>
+      <div id="record-sizes"></div>
+      <h2 class="eyebrow section-label">最近</h2>
+      <div id="recent-list"></div>
+    </section>
+
+    <section id="view-settings" class="screen subpage" hidden>
+      <button class="back" type="button" data-action="home">返回</button>
+      <h1 class="serif">设置</h1>
+
+      <div class="field">
+        <label for="name-input">称呼</label>
+        <input id="name-input" type="text" maxlength="12" autocomplete="nickname" placeholder="会出现在成绩卡上" enterkeyhint="done">
+        <p class="help">发给朋友时，成绩卡上会写上这个称呼。</p>
+      </div>
+
+      <div class="field">
+        <p class="name" id="theme-label">外观</p>
+        <div class="segment" role="group" aria-labelledby="theme-label">
+          <button type="button" data-action="theme" data-theme-value="auto">跟随系统</button>
+          <button type="button" data-action="theme" data-theme-value="light">浅色</button>
+          <button type="button" data-action="theme" data-theme-value="dark">深色</button>
+        </div>
+      </div>
+
+      <div class="setting-list">
+        <div class="setting-row">
+          <div class="setting-copy">
+            <span class="name">严格模式</span>
+            <p>点中的数字保持原样，更接近纸面上的练习。</p>
+          </div>
+          <button class="switch" type="button" role="switch" data-action="toggle" data-switch="strict" aria-checked="false" aria-label="严格模式"></button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy">
+            <span class="name">隐藏下一个</span>
+            <p>练习时不提示下一个数字。</p>
+          </div>
+          <button class="switch" type="button" role="switch" data-action="toggle" data-switch="hideNext" aria-checked="false" aria-label="隐藏下一个"></button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-copy">
+            <span class="name">点错时震动</span>
+            <p>手机支持时，点错会轻轻震一下。</p>
+          </div>
+          <button class="switch" type="button" role="switch" data-action="toggle" data-switch="vibrate" aria-checked="true" aria-label="点错时震动"></button>
+        </div>
+      </div>
+
+      <section class="about">
+        <h2>关于这种练习</h2>
+        <p>舒尔特方格把数字打乱放在格子里。你要按从小到大的顺序把它们找出来，用来稳定视觉注意和专注。</p>
+        <p>目光尽量停在方格中心，用余光搜索。每次只和自己的上一次比。</p>
+        <p>可以计时，也可以按等级限时。初级是单色方格。中级有不同颜色、深浅和别的形状。高级的数字只在自己的格子里放大缩小，跳动时颜色和深浅也会变。</p>
+        <p>发给朋友时，对方打开的是同一张方格。</p>
+      </section>
+
+      <div class="danger-zone">
+        <button class="btn text danger" type="button" data-action="clear">清除这台设备上的记录</button>
+      </div>
+    </section>
+
+    <nav class="tabbar" aria-label="主导航">
+      <button type="button" data-action="home" data-tab="home">训练</button>
+      <button type="button" data-action="records" data-tab="records">记录</button>
+    </nav>
+  </div>
+
+  <div id="sheet" class="sheet" hidden>
+    <button class="backdrop" type="button" data-action="close-sheet" aria-label="关闭"></button>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <h2 id="sheet-title" class="serif">发给朋友</h2>
+      <p id="sheet-lead" class="sheet-lead"></p>
+      <img id="sheet-image" alt="">
+      <p id="sheet-url" class="sheet-url" hidden></p>
+      <div class="sheet-actions">
+        <button id="sheet-share" class="btn primary" type="button" data-action="system-share">分享</button>
+        <button id="copy-link" class="btn ghost" type="button" data-action="copy-link">复制挑战链接</button>
+        <button class="btn ghost" type="button" data-action="save-image">保存图片</button>
+        <button class="btn text" type="button" data-action="close-sheet">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="dialog" class="dialog-wrap" hidden>
+    <button class="backdrop" type="button" data-action="dialog-cancel" aria-label="取消"></button>
+    <div class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+      <h2 id="dialog-title" class="serif"></h2>
+      <p id="dialog-body"></p>
+      <div class="dialog-actions">
+        <button id="dialog-cancel" class="btn ghost" type="button" data-action="dialog-cancel">取消</button>
+        <button id="dialog-ok" class="btn ghost" type="button" data-action="dialog-ok">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <p id="toast" class="toast" hidden role="status"></p>
+  <p id="live" class="sr-only" aria-live="polite"></p>
+
+  <script src="js/logic.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
